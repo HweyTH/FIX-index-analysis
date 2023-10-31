@@ -1,0 +1,220 @@
+---
+title: "Assignment 2"
+author: "Huy"
+date: "2023-10-31"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Phase 1
+
+Load the dataset containing monthly values of VIX and all categories of monthly EMV trackers from January 1990 - December 2022, and develop a regression model not only to for the purpose of predicting the future values of VIX. But, more importantly, the results of the regression analysis should possibly lead to new information by revealing the economic, financial and political factors that affect the behaviour of VIX over time.
+
+For implementation purposes, you are free to either use your previous program codes, the glmnet library, or any other packages available on open source. Also, note that the last column corresponds to values of VIX at month t+1, whereas its covariates at each row pertain to month t.
+
+Solve this problem using OLS, LASSO, Ridge Regression and Elastic Net Regression, and compare their performances by providing a thorough interpretation of their results. For each method, you may discuss its advantages and drawbacks, such as presence of multicollinearity, and then elaborate on their other aspects like feature selection, sparsity, etc.
+
+Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years?
+
+## OLS Regression
+
+Ordinary least square (OLS) regression is a method that allows us to find a line that best describes the relationship between one or more predictor variables and a response variable.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+```
+
+### Load the data
+
+```{r pressure, echo=FALSE}
+data <- read_excel("/Volumes/秘密/cai file nay ko can thiet/STA314H5F/EMV_VIX_Data.xlsx")
+plot(data$EMV, data$VIX)
+```
+
+### Build OLS Regression Model
+
+```{r pressure, echo=FALSE}
+# fit multiple linear regression model
+model <- lm(data$VIX~data$`Political Uncertainty Tracker`+
+              data$`Infectious Disease EMV Tracker` + 
+              data$`Macroeconomic News and Outlook EMV Tracker` +
+              data$`Macro – Broad Quantity Indicators EMV Tracker` +
+              data$`Macro – Inflation EMV Indicator` +
+              data$`Macro – Interest Rates EMV Tracker` +
+              data$`Macro – Other Financial Indicators EMV Tracker` +
+              data$`Macro – Labor Markets EMV Tracker` +
+              data$`Macro – Real Estate Markets EMV Tracker` +
+              data$`Macro – Trade EMV Tracker` +
+              data$`Macro – Business Investment and Sentiment EMV Tracker` +
+              data$`Macro – Consumer Spending and Sentiment EMV Tracker` + 
+              data$`Commodity Markets EMV Tracker` +
+              data$`Financial Crises EMV Tracker` +
+              data$`Exchange Rates EMV Tracker` +
+              data$`Healthcare Matters EMV Tracker` +
+              data$`Litigation Matters EMV Tracker` +
+              data$`Competition Matters EMV Tracker` +
+              data$`Labor Disputes EMV Tracker` +
+              data$`Intellectual Property Matters EMV Tracker` +
+              data$`Fiscal Policy EMV Tracker` +
+              data$`Taxes EMV Tracker` +
+              data$`Government Spending, Deficits, and Debt EMV Tracker` +
+              data$`Entitlement and Welfare Programs EMV Tracker` +
+              data$`Monetary Policy EMV Tracker` +
+              data$`Regulation EMV Tracker` +
+              data$`Financial Regulation EMV Tracker` +
+              data$`Competition Policy EMV Tracker` + 
+              data$`Intellectual Property Policy EMV Tracker` +
+              data$`Labor Regulations EMV Tracker` +
+              data$`Immigration EMV Tracker` +
+              data$`Energy and Environmental Regulation EMV Tracker` +
+              data$`Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker` +
+              data$`Housing and Land Management EMV Tracker` +
+              data$`Other Regulation EMV Tracker` +
+              data$`National Security Policy EMV Tracker` +
+              data$`Government-Sponsored Enterprises EMV Tracker` +
+              data$`Trade Policy EMV Tracker` +
+              data$`Healthcare Policy EMV Tracker` +
+              data$`Food and Drug Policy EMV Tracker` +
+              data$`Transportation, Infrastructure, and Public Utilities EMV Tracker` +
+              data$`Elections and Political Governance EMV Tracker` +
+              data$`Agricultural Policy EMV Tracker` +
+              data$`Petroleum Markets EMV Tracker`, data = data)
+```
+
+### Create Residual Plots
+
+```{r pressure, echo=FALSE}
+residual <- resid(model)
+```
+
+```{r pressure, echo=FALSE}
+plot(fitted(model), residual)
+abline(0,0)
+```
+
+### Validate Model Reliability
+
+The residuals of the Multiple Linear Regression appear to be concentrating around 0 between the values of 10 and 30 of the model. The residuals, when plotted against the model, exhibits a particular pattern.
+
+Therefore, we failed to assume homogeneity of variances for the model.
+
+Hence, OLS Regression Model are not applicable.
+
+## LASSO Regression
+
+Lasso regression is a method we can use to fit a regression model when multicollinearity is present in the data.
+
+Since previously we failed to fit the data into an OLS Regression Model, it is possible there exists mutlicollinearity between variables.
+
+```{r}
+library(glmnet)
+library(tidyverse)
+library(ggplot2)
+library(e1071)
+library(caret)
+```
+
+### Load and visualize the data
+
+```{r pressure, echo=FALSE}
+data <- read_excel("/Volumes/秘密/cai file nay ko can thiet/STA314H5F/EMV_VIX_Data.xlsx")
+plot(data$EMV, data$VIX)
+```
+
+### Perform k-fold CV to learn optimal degree
+```{r pressure, echo=FALSE}
+# set k value
+k <- 10
+
+# define training control as cross-validation and value of k equal to 10
+train_control <- trainControl(method = "cv", number = k)
+
+cv_error_rmse <- numeric(k)
+cv_error_r2 <- numeric(k)
+cv_error_mae <- numeric(k)
+
+for(d in 1:10){
+  f <- bquote(data$VIX ~ poly(data$`Political Uncertainty Tracker`,
+              data$`Infectious Disease EMV Tracker`, 
+              data$`Macroeconomic News and Outlook EMV Tracker`,
+              data$`Macro – Broad Quantity Indicators EMV Tracker`,
+              data$`Macro – Inflation EMV Indicator`,
+              data$`Macro – Interest Rates EMV Tracker`,
+              data$`Macro – Other Financial Indicators EMV Tracker`,
+              data$`Macro – Labor Markets EMV Tracker`,
+              data$`Macro – Real Estate Markets EMV Tracker`,
+              data$`Macro – Trade EMV Tracker`,
+              data$`Macro – Business Investment and Sentiment EMV Tracker`,
+              data$`Macro – Consumer Spending and Sentiment EMV Tracker`,
+              data$`Commodity Markets EMV Tracker`,
+              data$`Financial Crises EMV Tracker`,
+              data$`Exchange Rates EMV Tracker`,
+              data$`Healthcare Matters EMV Tracker`,
+              data$`Litigation Matters EMV Tracker`,
+              data$`Competition Matters EMV Tracker`,
+              data$`Labor Disputes EMV Tracker`,
+              data$`Intellectual Property Matters EMV Tracker`,
+              data$`Fiscal Policy EMV Tracker`,
+              data$`Taxes EMV Tracker`,
+              data$`Government Spending, Deficits, and Debt EMV Tracker`,
+              data$`Entitlement and Welfare Programs EMV Tracker`,
+              data$`Monetary Policy EMV Tracker`,
+              data$`Regulation EMV Tracker`,
+              data$`Financial Regulation EMV Tracker`,
+              data$`Competition Policy EMV Tracker`,
+              data$`Intellectual Property Policy EMV Tracker`,
+              data$`Labor Regulations EMV Tracker`,
+              data$`Immigration EMV Tracker`,
+              data$`Energy and Environmental Regulation EMV Tracker`,
+              data$`Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker`,
+              data$`Housing and Land Management EMV Tracker`,
+              data$`Other Regulation EMV Tracker`,
+              data$`National Security Policy EMV Tracker`,
+              data$`Government-Sponsored Enterprises EMV Tracker`,
+              data$`Trade Policy EMV Tracker`,
+              data$`Healthcare Policy EMV Tracker`,
+              data$`Food and Drug Policy EMV Tracker`,
+              data$`Transportation, Infrastructure, and Public Utilities EMV Tracker`,
+              data$`Elections and Political Governance EMV Tracker`,
+              data$`Agricultural Policy EMV Tracker`,
+              data$`Petroleum Markets EMV Tracker`, .(d), raw=TRUE))
+  
+  model <- train(as.formula(f), data = data, method = 'lm', trControl = train_control)
+  
+  cv_error_rmse[d] <- model$results$RMSE
+  cv_error_r2[d] <- model$results$Rsquared
+  cv_error_mae[d] <- model$results$MAE
+  
+  if(d == 3){
+    print(model)
+    print(model$finalModel)
+    print(model$resample)
+  }
+}
+```
+## Ridge Regression
+
+### Load and visualize the data
+
+## Elastic Net Regression
+
+### Load and visualize the data
+
+# Phase 2
+
+Most often, the forces driving the market movements themselves undergo changes when a transition occurs from one segment of time into its following one(s). Use elastic nets to construct predictive regression models for each segment of stock market and then interpret the results with the goal of extracting knowledge about the phenomena causing the regime switches and apparent transitions.
+
+Can you characterize the nature of the most dominant forces responsible for driving the stock market movements within each segment? Are there any pattern on sparsity of forces when comparing chaotic (pink) and normal (blue) segments of the stock market?
+
+Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years, by further considering the relatively homogeneous segments of the market?
+
+```{r pressure, echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
