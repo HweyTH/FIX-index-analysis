@@ -19,6 +19,60 @@ Solve this problem using OLS, LASSO, Ridge Regression and Elastic Net Regression
 
 Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years?
 
+```{r}
+# load the data
+data <- read_excel("/Volumes/秘密/STA314H5F/EMV_VIX_Data.xlsx")
+
+# define matrix of predictor variables
+x <- data.matrix(data[, c('Political Uncertainty Tracker',
+              'Infectious Disease EMV Tracker',
+              'Macroeconomic News and Outlook EMV Tracker',
+              'Macro – Broad Quantity Indicators EMV Tracker',
+              'Macro – Inflation EMV Indicator',
+              'Macro – Interest Rates EMV Tracker',
+              'Macro – Other Financial Indicators EMV Tracker',
+              'Macro – Labor Markets EMV Tracker',
+              'Macro – Real Estate Markets EMV Tracker',
+              'Macro – Trade EMV Tracker',
+              'Macro – Business Investment and Sentiment EMV Tracker',
+              'Macro – Consumer Spending and Sentiment EMV Tracker', 
+              'Commodity Markets EMV Tracker',
+              'Financial Crises EMV Tracker',
+              'Exchange Rates EMV Tracker',
+              'Healthcare Matters EMV Tracker',
+              'Litigation Matters EMV Tracker',
+              'Competition Matters EMV Tracker',
+              'Labor Disputes EMV Tracker',
+              'Intellectual Property Matters EMV Tracker',
+              'Fiscal Policy EMV Tracker',
+              'Taxes EMV Tracker',
+              'Government Spending, Deficits, and Debt EMV Tracker',
+              'Entitlement and Welfare Programs EMV Tracker',
+              'Monetary Policy EMV Tracker',
+              'Regulation EMV Tracker',
+              'Financial Regulation EMV Tracker',
+              'Competition Policy EMV Tracker',
+              'Intellectual Property Policy EMV Tracker',
+              'Labor Regulations EMV Tracker',
+              'Immigration EMV Tracker',
+              'Energy and Environmental Regulation EMV Tracker',
+              'Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker',
+              'Housing and Land Management EMV Tracker',
+              'Other Regulation EMV Tracker',
+              'National Security Policy EMV Tracker',
+              'Government-Sponsored Enterprises EMV Tracker',
+              'Trade Policy EMV Tracker',
+              'Healthcare Policy EMV Tracker',
+              'Food and Drug Policy EMV Tracker',
+              'Transportation, Infrastructure, and Public Utilities EMV Tracker',
+              'Elections and Political Governance EMV Tracker',
+              'Agricultural Policy EMV Tracker',
+              'Petroleum Markets EMV Tracker')]) 
+
+# define response variable
+y <- data$VIX
+```
+
 ## OLS Regression
 
 Ordinary least square (OLS) regression is a method that allows us to find a line that best describes the relationship between one or more predictor variables and a response variable.
@@ -29,10 +83,9 @@ library(ggplot2)
 library(readxl)
 ```
 
-### Load the data
+### Visualize the data
 
 ```{r pressure, echo=FALSE}
-data <- read_excel("D:\\STA314H5F\\EMV_VIX_Data.xlsx")
 plot(data$EMV, data$VIX)
 ```
 
@@ -107,9 +160,11 @@ Hence, OLS Regression Model are not applicable.
 
 ## LASSO Regression
 
+Previously, we failed to fit the data into a OLS Regression Model, therefore, mutlicollinearity and other factors are existent.
+
 Lasso regression is a method we can use to fit a regression model when multicollinearity is present in the data.
 
-Since previously we failed to fit the data into an OLS Regression Model, it is possible there exists mutlicollinearity between variables.
+In this case, we will fix the value of $\alpha$ to 1 to fit the data in Lasso Regression Model.
 
 ```{r}
 library(glmnet)
@@ -119,77 +174,50 @@ library(e1071)
 library(caret)
 ```
 
-### Load and visualize the data
-
-```{r pressure, echo=FALSE}
-data <- read_excel("D:\\STA314H5F\\EMV_VIX_Data.xlsx")
-plot(data$EMV, data$VIX)
-```
-### 
 ### Perform k-fold CV to learn optimal degree
+
 ```{r pressure, echo=FALSE}
-x <- data.matrix(data[, c('Political Uncertainty Tracker',
-              'Infectious Disease EMV Tracker',
-              'Macroeconomic News and Outlook EMV Tracker',
-              'Macro – Broad Quantity Indicators EMV Tracker',
-              'Macro – Inflation EMV Indicator',
-              'Macro – Interest Rates EMV Tracker',
-              'Macro – Other Financial Indicators EMV Tracker',
-              'Macro – Labor Markets EMV Tracker',
-              'Macro – Real Estate Markets EMV Tracker',
-              'Macro – Trade EMV Tracker',
-              'Macro – Business Investment and Sentiment EMV Tracker',
-              'Macro – Consumer Spending and Sentiment EMV Tracker', 
-              'Commodity Markets EMV Tracker',
-              'Financial Crises EMV Tracker',
-              'Exchange Rates EMV Tracker',
-              'Healthcare Matters EMV Tracker',
-              'Litigation Matters EMV Tracker',
-              'Competition Matters EMV Tracker',
-              'Labor Disputes EMV Tracker',
-              'Intellectual Property Matters EMV Tracker',
-              'Fiscal Policy EMV Tracker',
-              'Taxes EMV Tracker',
-              'Government Spending, Deficits, and Debt EMV Tracker',
-              'Entitlement and Welfare Programs EMV Tracker',
-              'Monetary Policy EMV Tracker',
-              'Regulation EMV Tracker',
-              'Financial Regulation EMV Tracker',
-              'Competition Policy EMV Tracker',
-              'Intellectual Property Policy EMV Tracker',
-              'Labor Regulations EMV Tracker',
-              'Immigration EMV Tracker',
-              'Energy and Environmental Regulation EMV Tracker',
-              'Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker',
-              'Housing and Land Management EMV Tracker',
-              'Other Regulation EMV Tracker',
-              'National Security Policy EMV Tracker',
-              'Government-Sponsored Enterprises EMV Tracker',
-              'Trade Policy EMV Tracker',
-              'Healthcare Policy EMV Tracker',
-              'Food and Drug Policy EMV Tracker',
-              'Transportation, Infrastructure, and Public Utilities EMV Tracker',
-              'Elections and Political Governance EMV Tracker',
-              'Agricultural Policy EMV Tracker',
-              'Petroleum Markets EMV Tracker')]) 
+# fit cross-validation model with alpha = 1 
+lasso.cv <- cv.glmnet(x, y, type.measure="mse", alpha=1, family="gaussian", nlambda=200, nfolds=10)
 
-y <- data$VIX
-
-cv_model <- cv.glmnet(x,y,alpha = 1)
-
-best_lambda <- cv_model$lambda.min
-best_lambda
-
-plot(cv_model)
-
-best_model <- glmnet(x, y, alpha = 1, lambda = best_lambda)
-
-# coefficients of the model with best lambda
-coef(best_model)
+# find the optimal lambda value
+lasso.cv$lambda.min
 ```
+
+### Visualize Lasso Regression Model and Lambda values
+
+```{r pressure, echo=FALSE}
+plot(lasso.cv)
+abline(h = lasso.cv$cvup[lasso.cv$index[1]], lty = 4)
+```
+
+Comment on the plot of lasso.cv
+
+```{r pressure, echo=FALSE}
+# find the maximum value of lambda
+lasso.cv$lambda.1se
+lasso = glmnet(x, y, alpha = 1)
+plot(lasso, xvar = 'lambda')
+abline(v = log(lasso.cv$lambda.min), lty = 3)
+abline(v = log(lasso.cv$lambda.1se), lty = 3)
+```
+
 ## Ridge Regression
 
-### Load and visualize the data
+In this case, we will fix the value of $\alpha$ to 0 fit the data in Ridge Regression Model and find the optimal $\lambda$ value.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(glmnet)
+library(ISLR)
+```
+
+### Fit the data into Ridge Regression Model
+
+```{r pressure, echo=FALSE}
+
+```
 
 ## Elastic Net Regression
 
