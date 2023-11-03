@@ -7,6 +7,13 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(caret)
+library(e1071)
+library(glmnet)
+library(ISLR)
 ```
 
 # Phase 1
@@ -21,56 +28,65 @@ Can you provide a coherent picture of mechanisms underlying the sudden volatilit
 
 ```{r}
 # load the data
-data <- read_excel("/Volumes/秘密/STA314H5F/EMV_VIX_Data.xlsx")
+df <- read_excel("/Users/hwey/Downloads/EMV_VIX_Data.xlsx")
+
+# exclude all observations with missing data
+df = na.omit(df)
+
+# return the dimensions of the data frame
+dim(df)
+
+# define the response variable 
+y <- df$VIX
 
 # define matrix of predictor variables
-x <- data.matrix(data[, c('Political Uncertainty Tracker',
-              'Infectious Disease EMV Tracker',
-              'Macroeconomic News and Outlook EMV Tracker',
-              'Macro – Broad Quantity Indicators EMV Tracker',
-              'Macro – Inflation EMV Indicator',
-              'Macro – Interest Rates EMV Tracker',
-              'Macro – Other Financial Indicators EMV Tracker',
-              'Macro – Labor Markets EMV Tracker',
-              'Macro – Real Estate Markets EMV Tracker',
-              'Macro – Trade EMV Tracker',
-              'Macro – Business Investment and Sentiment EMV Tracker',
-              'Macro – Consumer Spending and Sentiment EMV Tracker', 
-              'Commodity Markets EMV Tracker',
-              'Financial Crises EMV Tracker',
-              'Exchange Rates EMV Tracker',
-              'Healthcare Matters EMV Tracker',
-              'Litigation Matters EMV Tracker',
-              'Competition Matters EMV Tracker',
-              'Labor Disputes EMV Tracker',
-              'Intellectual Property Matters EMV Tracker',
-              'Fiscal Policy EMV Tracker',
-              'Taxes EMV Tracker',
-              'Government Spending, Deficits, and Debt EMV Tracker',
-              'Entitlement and Welfare Programs EMV Tracker',
-              'Monetary Policy EMV Tracker',
-              'Regulation EMV Tracker',
-              'Financial Regulation EMV Tracker',
-              'Competition Policy EMV Tracker',
-              'Intellectual Property Policy EMV Tracker',
-              'Labor Regulations EMV Tracker',
-              'Immigration EMV Tracker',
-              'Energy and Environmental Regulation EMV Tracker',
-              'Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker',
-              'Housing and Land Management EMV Tracker',
-              'Other Regulation EMV Tracker',
-              'National Security Policy EMV Tracker',
-              'Government-Sponsored Enterprises EMV Tracker',
-              'Trade Policy EMV Tracker',
-              'Healthcare Policy EMV Tracker',
-              'Food and Drug Policy EMV Tracker',
-              'Transportation, Infrastructure, and Public Utilities EMV Tracker',
-              'Elections and Political Governance EMV Tracker',
-              'Agricultural Policy EMV Tracker',
-              'Petroleum Markets EMV Tracker')]) 
+x <- model.matrix(VIX~., data = df)
 
-# define response variable
-y <- data$VIX
+# x <- data.matrix(data[, c('Political Uncertainty Tracker',
+#               'Infectious Disease EMV Tracker',
+#               'Macroeconomic News and Outlook EMV Tracker',
+#               'Macro – Broad Quantity Indicators EMV Tracker',
+#               'Macro – Inflation EMV Indicator',
+#               'Macro – Interest Rates EMV Tracker',
+#               'Macro – Other Financial Indicators EMV Tracker',
+#               'Macro – Labor Markets EMV Tracker',
+#               'Macro – Real Estate Markets EMV Tracker',
+#               'Macro – Trade EMV Tracker',
+#               'Macro – Business Investment and Sentiment EMV Tracker',
+#               'Macro – Consumer Spending and Sentiment EMV Tracker', 
+#               'Commodity Markets EMV Tracker',
+#               'Financial Crises EMV Tracker',
+#               'Exchange Rates EMV Tracker',
+#               'Healthcare Matters EMV Tracker',
+#               'Litigation Matters EMV Tracker',
+#               'Competition Matters EMV Tracker',
+#               'Labor Disputes EMV Tracker',
+#               'Intellectual Property Matters EMV Tracker',
+#               'Fiscal Policy EMV Tracker',
+#               'Taxes EMV Tracker',
+#               'Government Spending, Deficits, and Debt EMV Tracker',
+#               'Entitlement and Welfare Programs EMV Tracker',
+#               'Monetary Policy EMV Tracker',
+#               'Regulation EMV Tracker',
+#               'Financial Regulation EMV Tracker',
+#               'Competition Policy EMV Tracker',
+#               'Intellectual Property Policy EMV Tracker',
+#               'Labor Regulations EMV Tracker',
+#               'Immigration EMV Tracker',
+#               'Energy and Environmental Regulation EMV Tracker',
+#               'Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker',
+#               'Housing and Land Management EMV Tracker',
+#               'Other Regulation EMV Tracker',
+#               'National Security Policy EMV Tracker',
+#               'Government-Sponsored Enterprises EMV Tracker',
+#               'Trade Policy EMV Tracker',
+#               'Healthcare Policy EMV Tracker',
+#               'Food and Drug Policy EMV Tracker',
+#               'Transportation, Infrastructure, and Public Utilities EMV Tracker',
+#               'Elections and Political Governance EMV Tracker',
+#               'Agricultural Policy EMV Tracker',
+#               'Petroleum Markets EMV Tracker')]) 
+
 ```
 
 ## OLS Regression
@@ -221,6 +237,19 @@ library(ISLR)
 
 ## Elastic Net Regression
 
+Use trainControl() and train() functions to fit the Elastic Net Regression model to the data. 
+
+The goal is to find the optimal $\alpha$ and $\lambda$
+
+```{r}
+k <- 10
+set.seed(1)
+train_control <- trainControl(method = "cv", number = k)
+
+elastic_model <- train(y ~ ., data = cbind(x,y), method = "glmnet", preProcess = c("center", "scale"), tuneLength = 10, trControl = train_control)
+
+print(elastic_model)
+```
 ### Load and visualize the data
 
 # Phase 2
