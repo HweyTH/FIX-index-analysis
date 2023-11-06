@@ -7,7 +7,9 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
+
+# import useful library for the assignment
+library(tidyverse) 
 library(ggplot2)
 library(readxl)
 library(caret)
@@ -40,7 +42,7 @@ dim(df)
 y <- df$VIX
 
 # define matrix of predictor variables
-x <- model.matrix(VIX~., data = df)
+x <- model.matrix(VIX~., data = df)[,-1]
 
 # x <- data.matrix(data[, c('Political Uncertainty Tracker',
 #               'Infectious Disease EMV Tracker',
@@ -93,12 +95,6 @@ x <- model.matrix(VIX~., data = df)
 
 Ordinary least square (OLS) regression is a method that allows us to find a line that best describes the relationship between one or more predictor variables and a response variable.
 
-```{r}
-library(tidyverse)
-library(ggplot2)
-library(readxl)
-```
-
 ### Visualize the data
 
 ```{r pressure, echo=FALSE}
@@ -109,7 +105,7 @@ plot(data$EMV, data$VIX)
 
 ```{r pressure, echo=FALSE}
 # fit multiple linear regression model
-model <- lm(data$VIX~data$`Political Uncertainty Tracker`+
+ols_model <- lm(data$VIX~data$`Political Uncertainty Tracker`+
               data$`Infectious Disease EMV Tracker` + 
               data$`Macroeconomic News and Outlook EMV Tracker` +
               data$`Macro – Broad Quantity Indicators EMV Tracker` +
@@ -155,7 +151,16 @@ model <- lm(data$VIX~data$`Political Uncertainty Tracker`+
               data$`Petroleum Markets EMV Tracker`, data = data)
 ```
 
-### Create Residual Plots
+### Retract Model Attributes
+
+```{r}
+summary(ols_model)
+```
+
+The coefficient of determination is 0.6209. Therefore, only 62.09% of the variation in VIX is explained by the combination of all other attributes. 
+
+
+### Visualize Model Residuals
 
 ```{r pressure, echo=FALSE}
 residual <- resid(model)
@@ -166,11 +171,13 @@ plot(fitted(model), residual)
 abline(0,0)
 ```
 
-### Validate Model Reliability
+### Analysis of OLS Regression Model
 
 The residuals of the Multiple Linear Regression appear to be concentrating around 0 between the values of 10 and 30 of the model. The residuals, when plotted against the model, exhibits a particular pattern.
 
-Therefore, we failed to assume homogeneity of variances for the model.
+Moreover, the percentage of the variation of the response variable explainable by the predictors is low at approximately 62%.
+
+Therefore, we failed to assume homogeneity of variances for the model and the model fails to provide a reasonable rate of accuracy when predicting the output variable. 
 
 Hence, OLS Regression Model are not applicable.
 
