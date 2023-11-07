@@ -112,29 +112,29 @@ In this case, we will fix the value of $\alpha$ to 1 to fit the data in Lasso Re
 set.seed(1)
 
 # alpha=1 gives LASSO
-lasso.cv = cv.glmnet(x,y, type.measure="mse", standardize=TRUE, alpha=1, family="gaussian", nlambda=200, nfolds = 10)
+lasso.cv1 = cv.glmnet(x,y, type.measure="mse", standardize=TRUE, alpha=1, family="gaussian", nlambda=200, nfolds = 10)
 
 # most optimal lambda value
-lasso.cv$lambda.min
+lasso.cv1$lambda.min
 
 # maximum lambda value in the range of one std
-lasso.cv$lambda.1se
+lasso.cv1$lambda.1se
 
-round(cbind(coef(lasso.cv, s='lambda.min'), coef(lasso.cv, s='lambda.1se')), digits=3)
+round(cbind(coef(lasso.cv1, s='lambda.min'), coef(lasso.cv1, s='lambda.1se')), digits=3)
 ```
 
 ### Visualize Model and Retract Related Attributes
 
-```{r pressure, echo=FALSE}
-plot(lasso.cv)
-abline(h = lasso.cv$cvup[lasso.cv$index[1]], lty = 4)
+```{r}
+plot(lasso.cv1)
+abline(h = lasso.cv1$cvup[lasso.cv1$index[1]], lty = 4)
 ```
 
-```{r pressure, echo=FALSE}
-lasso = glmnet(x,y, alpha=1)
-plot(lasso, xvar='lambda')
-abline(v=log(lasso.cv$lambda.min), lty=3)
-abline(v=log(lasso.cv$lambda.1se), lty=3)
+```{r}
+lasso1 = glmnet(x,y, alpha=1)
+plot(lasso1, xvar='lambda')
+abline(v=log(lasso.cv1$lambda.min), lty=3)
+abline(v=log(lasso.cv1$lambda.1se), lty=3)
 ```
 
 ```{r}
@@ -189,18 +189,122 @@ In this case, we will fix the value of $\alpha$ to 0 fit the data in Ridge Regre
 ```{r}
 set.seed(1)
 ridge.cv1 = cv.glmnet(x, y, type.measure="mse", alpha=0, family="gaussian", nlambda=200, nfolds=10, standardize = TRUE)
+
+# find optimal lambda value that minimizes MSE
 ridge.cv1$lambda.min
+
+# find maximum lambda value within one standard deviation
+ridge.cv1$lambda.1se
+
+# coefficient shrinkage
+round(cbind(coef(ridge.cv1, s='lambda.min'), coef(ridge.cv1, s='lambda.1se')), digits=3)
+
 ```
 
+### Visualize Model and Retrieve Related Attributes
+
+```{r}
+plot(ridge.cv1)
+abline(h=ridge.cv1$cvup[ridge.cv1$index[1]], lty=4)
+```
+
+```{r}
+ridge1 = glmnet(x, y, alpha = 0)
+plot(ridge1, xvar = 'lambda')
+abline(v = log(ridge.cv1$lambda.min), lty = 3)
+abline(v = log(ridge.cv1$lambda.1se), lty = 3)
+```
+
+```{r}
+predictions_ridge1 <- glmnet(x, y, alpha = 0, lambda = ridge.cv1$lambda.min) %>% predict(x) %>% as.vector()
+# Model performance metrics
+RMSE = RMSE(predictions_ridge1, y)
+RMSE
+```
+
+### Fit Ridge Regression Model To Raw Data
+```{r}
+set.seed(1)
+ridge.cv2 = cv.glmnet(x, y, type.measure="mse", alpha=0, family="gaussian", nlambda=200, nfolds = 10, standardize = FALSE)
+
+# find optimal lambda value that minimizes MSE
+ridge.cv2$lambda.min
+
+# find maximum lambda value within one standard deviation
+ridge.cv2$lambda.1se
+
+# coefficient shrinkage
+round(cbind(coef(ridge.cv2, s='lambda.min'), coef(ridge.cv2, s='lambda.1se')), digits=3)
+```
+
+### Visualize Model and Retrieve Related Attributes
+```{r}
+plot(ridge.cv2)
+abline(h=ridge.cv2$cvup[ridge.cv2$index[1]], lty=4)
+```
+
+```{r}
+ridge2 = glmnet(x, y, alpha=0)
+plot(ridge2, xvar = 'lambda')
+abline(v=log(ridge.cv2$lambda.min), lty=3)
+abline(v=log(ridge.cv2$lambda.1se), lty=3)
+```
+
+```{r}
+predictions_ridge2 <- glmnet(x, y, alpha=0, lambda = ridge.cv2$lambda.min, standardize = FALSE) %>% predict(x) %>% as.vector()
+
+# Model performance metrics
+RMSE2 = RMSE(predictions_ridge2, y)
+RMSE2
+```
 ## Elastic Net Regression
 
 Use trainControl() and train() functions to fit the Elastic Net Regression model to the data. 
 
-The goal is to find the optimal $\alpha$ and $\lambda$
+The goal is to find the optimal $\alpha$ and $\lambda$. 
 
 ```{r}
+k <- 10
+set.seed(1)
+train_control <- trainControl(method = "cv", number = k)
+
+elastic_model <- train(y ~ ., data = cbind(x, y), method = "glmnet", preProcess = c("center", "scale"), tuneLength = 10, trControl = train_control)
+
+# print model performance metrics along with other details
+print(elastic_model)
 ```
-### Load and visualize the data
+
+```{r}
+print(elastic_model$finalModel$tuneValue)
+```
+
+```{r}
+predictions_enet <- glmnet(x, y, alpha = elastic_model$finalModel$tuneValue$alpha, lamba = elastic_model$finalModel$tuneValue$lambda) %>% predict(x) %>% as.vector()
+
+# Model performance metrics
+RMSE_enet = RMSE(predictions_enet, y)
+RMSE_enet
+```
+
+```{r}
+k <- 10
+set.seed(1)
+train_control <- trainControl(method = "cv", number = k)
+
+elastic_model <- train(y ~ ., data=cbind(x,y), method = "glmnet", preProcess = c("center", "scale"), tuneLength = 100, trControl = train_control)
+```
+
+```{r}
+print(elastic_model$finalModel$tuneValue)
+```
+
+```{r}
+predictions_enet <- glmnet(x, y, alpha = elastic_model$finalModel$tuneValue$alpha, lambda = elastic_model$finalModel$tuneValue$lambda) %>% predict(x) %>% as.vector()
+
+# Model performance metrics
+RMSE_enet = RMSE(predictions_enet, y)
+RMSE_enet
+```
 
 # Phase 2
 
