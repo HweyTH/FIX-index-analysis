@@ -16,6 +16,7 @@ library(caret)
 library(e1071)
 library(glmnet)
 library(ISLR)
+library(car)
 ```
 
 # Phase 1
@@ -27,6 +28,8 @@ For implementation purposes, you are free to either use your previous program co
 Solve this problem using OLS, LASSO, Ridge Regression and Elastic Net Regression, and compare their performances by providing a thorough interpretation of their results. For each method, you may discuss its advantages and drawbacks, such as presence of multicollinearity, and then elaborate on their other aspects like feature selection, sparsity, etc.
 
 Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years?
+
+## Load The Data and Preprocess For Model Fitting
 
 ```{r}
 # load the data
@@ -40,122 +43,35 @@ dim(df)
 
 # define the response variable 
 y <- df$VIX
+head(y)
+dim(y)
 
 # define matrix of predictor variables
-x <- model.matrix(VIX~., data = df)[,-1]
-
-# x <- data.matrix(data[, c('Political Uncertainty Tracker',
-#               'Infectious Disease EMV Tracker',
-#               'Macroeconomic News and Outlook EMV Tracker',
-#               'Macro – Broad Quantity Indicators EMV Tracker',
-#               'Macro – Inflation EMV Indicator',
-#               'Macro – Interest Rates EMV Tracker',
-#               'Macro – Other Financial Indicators EMV Tracker',
-#               'Macro – Labor Markets EMV Tracker',
-#               'Macro – Real Estate Markets EMV Tracker',
-#               'Macro – Trade EMV Tracker',
-#               'Macro – Business Investment and Sentiment EMV Tracker',
-#               'Macro – Consumer Spending and Sentiment EMV Tracker', 
-#               'Commodity Markets EMV Tracker',
-#               'Financial Crises EMV Tracker',
-#               'Exchange Rates EMV Tracker',
-#               'Healthcare Matters EMV Tracker',
-#               'Litigation Matters EMV Tracker',
-#               'Competition Matters EMV Tracker',
-#               'Labor Disputes EMV Tracker',
-#               'Intellectual Property Matters EMV Tracker',
-#               'Fiscal Policy EMV Tracker',
-#               'Taxes EMV Tracker',
-#               'Government Spending, Deficits, and Debt EMV Tracker',
-#               'Entitlement and Welfare Programs EMV Tracker',
-#               'Monetary Policy EMV Tracker',
-#               'Regulation EMV Tracker',
-#               'Financial Regulation EMV Tracker',
-#               'Competition Policy EMV Tracker',
-#               'Intellectual Property Policy EMV Tracker',
-#               'Labor Regulations EMV Tracker',
-#               'Immigration EMV Tracker',
-#               'Energy and Environmental Regulation EMV Tracker',
-#               'Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker',
-#               'Housing and Land Management EMV Tracker',
-#               'Other Regulation EMV Tracker',
-#               'National Security Policy EMV Tracker',
-#               'Government-Sponsored Enterprises EMV Tracker',
-#               'Trade Policy EMV Tracker',
-#               'Healthcare Policy EMV Tracker',
-#               'Food and Drug Policy EMV Tracker',
-#               'Transportation, Infrastructure, and Public Utilities EMV Tracker',
-#               'Elections and Political Governance EMV Tracker',
-#               'Agricultural Policy EMV Tracker',
-#               'Petroleum Markets EMV Tracker')]) 
-
+x <- model.matrix(VIX~., data = df[,-1])[,-1]
+dim(x)
 ```
 
 ## OLS Regression
 
 Ordinary least square (OLS) regression is a method that allows us to find a line that best describes the relationship between one or more predictor variables and a response variable.
 
-### Visualize the data
-
-```{r pressure, echo=FALSE}
-plot(data$EMV, data$VIX)
-```
-
-### Build OLS Regression Model
+### Fit OLS Regression Model
 
 ```{r pressure, echo=FALSE}
 # fit multiple linear regression model
-ols_model <- lm(data$VIX~data$`Political Uncertainty Tracker`+
-              data$`Infectious Disease EMV Tracker` + 
-              data$`Macroeconomic News and Outlook EMV Tracker` +
-              data$`Macro – Broad Quantity Indicators EMV Tracker` +
-              data$`Macro – Inflation EMV Indicator` +
-              data$`Macro – Interest Rates EMV Tracker` +
-              data$`Macro – Other Financial Indicators EMV Tracker` +
-              data$`Macro – Labor Markets EMV Tracker` +
-              data$`Macro – Real Estate Markets EMV Tracker` +
-              data$`Macro – Trade EMV Tracker` +
-              data$`Macro – Business Investment and Sentiment EMV Tracker` +
-              data$`Macro – Consumer Spending and Sentiment EMV Tracker` + 
-              data$`Commodity Markets EMV Tracker` +
-              data$`Financial Crises EMV Tracker` +
-              data$`Exchange Rates EMV Tracker` +
-              data$`Healthcare Matters EMV Tracker` +
-              data$`Litigation Matters EMV Tracker` +
-              data$`Competition Matters EMV Tracker` +
-              data$`Labor Disputes EMV Tracker` +
-              data$`Intellectual Property Matters EMV Tracker` +
-              data$`Fiscal Policy EMV Tracker` +
-              data$`Taxes EMV Tracker` +
-              data$`Government Spending, Deficits, and Debt EMV Tracker` +
-              data$`Entitlement and Welfare Programs EMV Tracker` +
-              data$`Monetary Policy EMV Tracker` +
-              data$`Regulation EMV Tracker` +
-              data$`Financial Regulation EMV Tracker` +
-              data$`Competition Policy EMV Tracker` + 
-              data$`Intellectual Property Policy EMV Tracker` +
-              data$`Labor Regulations EMV Tracker` +
-              data$`Immigration EMV Tracker` +
-              data$`Energy and Environmental Regulation EMV Tracker` +
-              data$`Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker` +
-              data$`Housing and Land Management EMV Tracker` +
-              data$`Other Regulation EMV Tracker` +
-              data$`National Security Policy EMV Tracker` +
-              data$`Government-Sponsored Enterprises EMV Tracker` +
-              data$`Trade Policy EMV Tracker` +
-              data$`Healthcare Policy EMV Tracker` +
-              data$`Food and Drug Policy EMV Tracker` +
-              data$`Transportation, Infrastructure, and Public Utilities EMV Tracker` +
-              data$`Elections and Political Governance EMV Tracker` +
-              data$`Agricultural Policy EMV Tracker` +
-              data$`Petroleum Markets EMV Tracker`, data = data)
+ols_model <- lm(y~x, data = df)
 ```
 
-### Retract Model Attributes
+### Visualize and Retract OLS Model Attributes
 
 ```{r}
+# retract model statistics
 summary(ols_model)
+
+# produce added variable plots
+avPlots(ols_model)
 ```
+
 
 The coefficient of determination is 0.6209. Therefore, only 62.09% of the variation in VIX is explained by the combination of all other attributes. 
 
@@ -163,11 +79,11 @@ The coefficient of determination is 0.6209. Therefore, only 62.09% of the variat
 ### Visualize Model Residuals
 
 ```{r pressure, echo=FALSE}
-residual <- resid(model)
+residual <- resid(ols_model)
 ```
 
 ```{r pressure, echo=FALSE}
-plot(fitted(model), residual)
+plot(fitted(ols_model), residual)
 abline(0,0)
 ```
 
@@ -189,57 +105,91 @@ Lasso regression is a method we can use to fit a regression model when multicoll
 
 In this case, we will fix the value of $\alpha$ to 1 to fit the data in Lasso Regression Model.
 
-```{r}
-library(glmnet)
-library(tidyverse)
-library(ggplot2)
-library(e1071)
-library(caret)
-```
-
-### Perform k-fold CV to learn optimal degree
+### Standardize Data and Fit LASSO Regression Model
 
 ```{r pressure, echo=FALSE}
-# fit cross-validation model with alpha = 1 
-lasso.cv <- cv.glmnet(x, y, type.measure="mse", alpha=1, family="gaussian", nlambda=200, nfolds=10)
+# ensure reproducible results of random variables model fitting
+set.seed(1)
 
-# find the optimal lambda value
+# alpha=1 gives LASSO
+lasso.cv = cv.glmnet(x,y, type.measure="mse", standardize=TRUE, alpha=1, family="gaussian", nlambda=200, nfolds = 10)
+
+# most optimal lambda value
 lasso.cv$lambda.min
+
+# maximum lambda value in the range of one std
+lasso.cv$lambda.1se
+
+round(cbind(coef(lasso.cv, s='lambda.min'), coef(lasso.cv, s='lambda.1se')), digits=3)
 ```
 
-### Visualize Lasso Regression Model and Lambda values
+### Visualize Model and Retract Related Attributes
 
 ```{r pressure, echo=FALSE}
 plot(lasso.cv)
 abline(h = lasso.cv$cvup[lasso.cv$index[1]], lty = 4)
 ```
 
-Comment on the plot of lasso.cv
-
 ```{r pressure, echo=FALSE}
-# find the maximum value of lambda
-lasso.cv$lambda.1se
-lasso = glmnet(x, y, alpha = 1)
-plot(lasso, xvar = 'lambda')
-abline(v = log(lasso.cv$lambda.min), lty = 3)
-abline(v = log(lasso.cv$lambda.1se), lty = 3)
+lasso = glmnet(x,y, alpha=1)
+plot(lasso, xvar='lambda')
+abline(v=log(lasso.cv$lambda.min), lty=3)
+abline(v=log(lasso.cv$lambda.1se), lty=3)
+```
+
+```{r}
+predictions_lasso1 <- glmnet(x, y, alpha=1, lambda=lasso.cv$lambda.min) %>% predict(x) %>% as.vector()
+
+# Model performance metrics
+RMSE = RMSE(predictions_lasso1, y)
+RMSE
+```
+
+### Fit LASSO Regression Model To Raw Data
+
+```{r}
+set.seed(1)
+# fit LASSO Regression Without Data Standardization
+lasso.cv2 = cv.glmnet(x,y, type.measure="mse", standardize=FALSE, alpha=1, family="gaussian", nlambda=200, nfolds=10)
+
+lasso.cv2$lambda.min
+lasso.cv2$lambda.1se
+
+round(cbind(coef(lasso.cv2, s='lambda.min'), coef(lasso.cv2, s='lambda.1se')), digits=3)
+```
+
+### Visualize Model and Retract Related Attributes
+
+```{r}
+plot(lasso.cv2)
+abline(h=lasso.cv2$cvup[lasso.cv2$index[1]], lty=4)
+```
+
+```{r}
+lasso2 = glmnet(x,y,alpha=1)
+plot(lasso2, xvar='lambda')
+abline(v=log(lasso.cv2$lambda.min), lty=3)
+abline(v=log(lasso.cv2$lambda.1se), lty=3)
+```
+
+```{r}
+predictions_lasso2 <- glmnet(x, y, alpha=1, lambda=lasso.cv2$lambda.min, standardize=FALSE) %>% predict(x) %>% as.vector()
+
+# Model performance metrics 
+RMSE2 = RMSE(predictions_lasso2, y)
+RMSE2
 ```
 
 ## Ridge Regression
 
 In this case, we will fix the value of $\alpha$ to 0 fit the data in Ridge Regression Model and find the optimal $\lambda$ value.
 
+### Standardize Data and Fit Ridge Regression Model
+
 ```{r}
-library(tidyverse)
-library(ggplot2)
-library(glmnet)
-library(ISLR)
-```
-
-### Fit the data into Ridge Regression Model
-
-```{r pressure, echo=FALSE}
-
+set.seed(1)
+ridge.cv1 = cv.glmnet(x, y, type.measure="mse", alpha=0, family="gaussian", nlambda=200, nfolds=10, standardize = TRUE)
+ridge.cv1$lambda.min
 ```
 
 ## Elastic Net Regression
@@ -249,13 +199,6 @@ Use trainControl() and train() functions to fit the Elastic Net Regression model
 The goal is to find the optimal $\alpha$ and $\lambda$
 
 ```{r}
-k <- 10
-set.seed(1)
-train_control <- trainControl(method = "cv", number = k)
-
-elastic_model <- train(y ~ ., data = cbind(x,y), method = "glmnet", preProcess = c("center", "scale"), tuneLength = 10, trControl = train_control)
-
-print(elastic_model)
 ```
 ### Load and visualize the data
 
@@ -267,7 +210,7 @@ Can you characterize the nature of the most dominant forces responsible for driv
 
 Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years, by further considering the relatively homogeneous segments of the market?
 
-```{r pressure, echo=FALSE}
+```{r}
 
 ```
 
