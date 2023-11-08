@@ -19,17 +19,15 @@ library(ISLR)
 library(car)
 ```
 
-# Phase 1
+# Introduction
 
-Load the dataset containing monthly values of VIX and all categories of monthly EMV trackers from January 1990 - December 2022, and develop a regression model not only to for the purpose of predicting the future values of VIX. But, more importantly, the results of the regression analysis should possibly lead to new information by revealing the economic, financial and political factors that affect the behaviour of VIX over time.
+The stock market has always been an intriguing subject of study through the lens of data scientists and analysts. It is well-known that stock market operates in a mysterious ways which involve numerous shifts and changes. For this reason, the VIX index was generated as an estimator for such volatility. 
 
-For implementation purposes, you are free to either use your previous program codes, the glmnet library, or any other packages available on open source. Also, note that the last column corresponds to values of VIX at month t+1, whereas its covariates at each row pertain to month t.
+However, what are the considerable factors that determine the value of VIX indexes?
 
-Solve this problem using OLS, LASSO, Ridge Regression and Elastic Net Regression, and compare their performances by providing a thorough interpretation of their results. For each method, you may discuss its advantages and drawbacks, such as presence of multicollinearity, and then elaborate on their other aspects like feature selection, sparsity, etc.
+Considering this all-hovering question, in this report, through using Statistical Models and their Corresponding Metrics, I aim to demonstrate it is probable to forecast the stock market fear index (VIX) to an extent of accuracy and the models could be used to predict the movement of the stock market in the future.
 
-Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years?
-
-## Load The Data and Preprocess For Model Fitting
+## Load and Preprocess Data for Model Fitting
 
 ```{r}
 # load the data
@@ -49,23 +47,39 @@ dim(y)
 # define matrix of predictor variables
 x <- model.matrix(VIX~., data = df[,-1])[,-1]
 dim(x)
+
+data_complete <- df[,-1]
 ```
+In this section, the raw data of the VIX and monthly EMV trackers are loaded into df. "VIX" index entries are assigned to be response variable, while the rest of the data entries (except date variables) are collected as predictors.
+
+The response variable is denoted by y.
+
+The predictive variables is denoted by x. 
+
+Nevertheless, the data frame is scanned initially to remove any empty data entries.
+
+Through inspection of the raw data sample, we can say that <sparsity>.
 
 ## OLS Regression
 
-Ordinary least square (OLS) regression is a method that allows us to find a line that best describes the relationship between one or more predictor variables and a response variable.
+Firstly, we can use Ordinary Least Squares Regression technique to verify the relationship between VIX and the EMV trackers. 
+
+By assuming linearity in the relationship of VIX and the EMV metrics, we can fit the data into OLS Regression Model:
 
 ### Fit OLS Regression Model
 
 ```{r pressure, echo=FALSE}
 # fit multiple linear regression model
-ols_model <- lm(y~x, data = df)
+ols_model <- lm(data_complete$VIX~., data = data_complete)
+
+# view model summary 
+summary(ols_model)
 ```
 
-### Visualize and Retract OLS Model Attributes
+### Visualize OLS Regression Model
 
 ```{r}
-# retract model statistics
+# retrieve model statistics
 summary(ols_model)
 
 # produce added variable plots
@@ -73,41 +87,56 @@ avPlots(ols_model)
 ```
 
 
-The coefficient of determination is 0.6209. Therefore, only 62.09% of the variation in VIX is explained by the combination of all other attributes. 
 
+### Visualize OLS Regression Residuals
 
-### Visualize Model Residuals
-
-```{r pressure, echo=FALSE}
+```{r}
 residual <- resid(ols_model)
-```
-
-```{r pressure, echo=FALSE}
 plot(fitted(ols_model), residual)
 abline(0,0)
 ```
 
-### Analysis of OLS Regression Model
+```{r}
+# create QQ plot for the residuals
+qqnorm(residual)
 
-The residuals of the Multiple Linear Regression appear to be concentrating around 0 between the values of 10 and 30 of the model. The residuals, when plotted against the model, exhibits a particular pattern.
+# add a diagonal line
+qqline(residual)
+```
 
-Moreover, the percentage of the variation of the response variable explainable by the predictors is low at approximately 62%.
+### Interpretation of OLS Regression Model
 
-Therefore, we failed to assume homogeneity of variances for the model and the model fails to provide a reasonable rate of accuracy when predicting the output variable. 
+According to the model summary, p-value is less than 2.2e-16, therefore, we can say that there is a significant relationship between VIX and other independent EMV variables. However, it is also significant to consider the Multiple R-squared metric of the model since it is 0.6214. This shows that only 62.14% of the variation in VIX values is accountable by the EMV trackers' values. Since only more than half of the variation in VIX is explainable by the EMV trackers in the model, it is safe to doubt the fitting of Ordinary Least Squared model to the data. 
 
-Hence, OLS Regression Model are not applicable.
+Furthermore, it is important that OLS Regression Technique is performed under the assumptions of normality and homoscedasticity. 
+
+In regards to normality, it is apparent from the Q-Q plot that the residuals of the OLS model fall roughly along the diagonal line. With insignificant data strays from the line, it can be concluded the assumption of normality is met. 
+
+In regards to homoscedasticity, through examining the residual plot against the fitted model, the data points witness a particular pattern as they cluster in the intervals [-5, 5] on the y-axis and [10, 30] on the x axis. Thus, the residuals appear to not be randomly and evenly distributed. Hence, we fail to assume the randomness in the variances of independent variables.
+
+In conclusion, due to the failure to assume homoscedasticity between independent variables, coupled with the relatively low Multiple R-squared value, Ordinary Least Squared Regression is not reliable in explanation of the data. 
+
+Thereafter, we may assume the existence mutlicollinearity on the grounds of insufficient evidence in linear relationship between VIX and the EMV trackers.
+
+```{r}
+vif(ols_model)
+```
+Upon examining the VIF score of the EMV trackers in response to the VIX values, many of them are relatively large such as "EMV" with 148.734215, "Political Uncertainty Tracker" with 64.972093, "Macroeconomic News and Outlook EMV Tracker" with 141.731168,  
+and "Macro – Broad Quantity Indicators EMV Tracker" with 13.75098. 
+
+Since these VIF scores are considerably large, it is conclusive there exists multicollinearity between variables in our data. 
+
+Thereafter, it is necessary to apply Lasso Regression, Ridge Regression and Net Elastic Model to deal with mutlicollinearity.
 
 ## LASSO Regression
 
-Previously, we failed to fit the data into a OLS Regression Model, therefore, mutlicollinearity and other factors are existent.
+Previously, we failed to fit OLS Regression Model to the (given) data. Additionally, we has proven multicollinearity among the predictors. Therefore, it is essential to use Least Absolute Shrinkage and Selection Operator regression to remove highly-correlated variables by shrinking their coefficients completely to zero. 
 
-Lasso regression is a method we can use to fit a regression model when multicollinearity is present in the data.
-
-In this case, we will fix the value of $\alpha$ to 1 to fit the data in Lasso Regression Model.
+In the following sections, Lasso Regression would be applied to standardized data and raw data separately to compare the performances on the data. 
 
 ### Standardize Data and Fit LASSO Regression Model
 
-```{r pressure, echo=FALSE}
+```{r}
 # ensure reproducible results of random variables model fitting
 set.seed(1)
 
@@ -123,7 +152,7 @@ lasso.cv1$lambda.1se
 round(cbind(coef(lasso.cv1, s='lambda.min'), coef(lasso.cv1, s='lambda.1se')), digits=3)
 ```
 
-### Visualize Model and Retract Related Attributes
+### Visualize Lasso Regression Model
 
 ```{r}
 plot(lasso.cv1)
@@ -138,7 +167,7 @@ abline(v=log(lasso.cv1$lambda.1se), lty=3)
 ```
 
 ```{r}
-predictions_lasso1 <- glmnet(x, y, alpha=1, lambda=lasso.cv$lambda.min) %>% predict(x) %>% as.vector()
+predictions_lasso1 <- glmnet(x, y, alpha=1, lambda=lasso.cv1$lambda.min) %>% predict(x) %>% as.vector()
 
 # Model performance metrics
 RMSE = RMSE(predictions_lasso1, y)
@@ -158,7 +187,7 @@ lasso.cv2$lambda.1se
 round(cbind(coef(lasso.cv2, s='lambda.min'), coef(lasso.cv2, s='lambda.1se')), digits=3)
 ```
 
-### Visualize Model and Retract Related Attributes
+### Visualize Lasso Regression Model
 
 ```{r}
 plot(lasso.cv2)
@@ -180,9 +209,139 @@ RMSE2 = RMSE(predictions_lasso2, y)
 RMSE2
 ```
 
+### Analysis of Lasso Regression Model
+
+#### Standardized Data Frame 
+
+The optimal lambda which minimizes MSE reported by the model is 0.1319708 and the lambda value which keeps cross-validation error within one standard error is 1.606589. 
+
+16/46 variables were marked as insignificant by the model:
+
+"Political Uncertainty Tracker"
+
+"Macroeconomic News and Outlook EMV Tracker"
+
+"Macro – Other Financial Indicators EMV Tracker" 
+
+"Macro – Real Estate Markets EMV Tracker"  
+
+"Macro – Business Investment and Sentiment EMV Tracker" 
+
+"Financial Crises EMV Tracker"
+
+"Exchange Rates EMV Tracker"
+
+"Healthcare Matters EMV Tracker"
+
+"Competition Matters EMV Tracker"
+
+"Fiscal Policy EMV Tracker"
+
+"Taxes EMV Tracker"
+
+"Regulation EMV Tracker"
+
+"Intellectual Property Policy EMV Tracker"
+
+"Labor Regulations EMV Tracker"
+
+"Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker"
+
+"Housing and Land Management EMV Tracker"
+
+"Food and Drug Policy EMV Tracker"
+
+"Transportation, Infrastructure, and Public Utilities EMV Tracker"
+
+"Petroleum Markets EMV Tracker"
+
+Overall, the Root Mean Squared Error metric for the model is 4.873161.
+
+#### Raw Data Frame
+
+The optimal lambda which minimizes MSE reported by the model is 0.3093777 and the lambda value which keeps cross-validation error within one standard error is 2.4832.
+
+31/45 variables were marked as insignificant by the model:
+"Political Uncertainty Tracker"                           
+
+"Infectious Disease EMV Tracker"           
+
+"Macro – Other Financial Indicators EMV Tracker" 
+
+"Macro – Labor Markets EMV Tracker"    
+
+"Macro – Real Estate Markets EMV Tracker" 
+
+"Macro – Trade EMV Tracker"      
+
+"Macro – Business Investment and Sentiment EMV Tracker"
+
+"Macro – Consumer Spending and Sentiment EMV Tracker" 
+
+"Commodity Markets EMV Tracker"
+
+"Exchange Rates EMV Tracker" 
+
+"Healthcare Matters EMV Tracker" 
+
+"Litigation Matters EMV Tracker" 
+
+"Competition Matters EMV Tracker" 
+
+"Intellectual Property Matters EMV Tracker" 
+
+"Fiscal Policy EMV Tracker"
+
+"Taxes EMV Tracker"
+
+"Entitlement and Welfare Programs EMV Tracker"
+
+"Regulation EMV Tracker"  
+
+"Competition Policy EMV Tracker"  
+
+"Intellectual Property Policy EMV Tracker"  
+
+"Labor Regulations EMV Tracker" 
+
+'Immigration EMV Tracker"  
+
+'Energy and Environmental Regulation EMV Tracker"   
+
+"Lawsuit and Tort Reform, Supreme Court Decisions EMV Tracker" 
+
+"Housing and Land Management EMV Tracker"
+
+"Other Regulation EMV Tracker"   
+
+"Government-Sponsored Enterprises EMV Tracker"  
+
+"Healthcare Policy EMV Tracker"
+
+"Food and Drug Policy EMV Tracker"
+
+"Transportation, Infrastructure, and Public Utilities EMV Tracker"
+
+"Agricultural Policy EMV Tracker"      
+
+"Petroleum Markets EMV Tracker"                                     
+                                                                    
+Overall, the Root Mean Squared Error metric for the model is 5.095759.
+
+#### Conclusion
+
+Upon comparing the RMSE score of the Lasso Model when applying to standardized data and raw data, we can see that the Lasso Regression Model applied to the standardized data yields lower standard deviation of the residuals, which is always better. 
+
+Moreover, it is noticeable that when fitting Lasso Regression to raw data, 31 of the 45 independent variables were removed. Whereas, if we adjust the weight of the predictors in the data by standardizing, Lasso Regression only remove 16 of them. 
+
+On the grounds that removing the majority of the predictive variables heavily affect the accuracy of the prediction of the model, pre-processing the data by standardization is favorable in this case. Coupled with the lower RMSE metric, 
+it is conclusive that Lasso Regression Model on standardized data is reliable.
+
 ## Ridge Regression
 
-In this case, we will fix the value of $\alpha$ to 0 fit the data in Ridge Regression Model and find the optimal $\lambda$ value.
+Another way we could try to deal with multicollinearity is to apply Ridge Regression Model. Multicollinearity is resolved through the model by driving the coefficients of all predictors to zero.
+
+In the following section, Ridge Regression would be applied to standardized and raw data and their performances are compared to obtain the better model fitting.
 
 ### Standardize Data and Fit Ridge Regression Model
 
@@ -201,7 +360,7 @@ round(cbind(coef(ridge.cv1, s='lambda.min'), coef(ridge.cv1, s='lambda.1se')), d
 
 ```
 
-### Visualize Model and Retrieve Related Attributes
+### Visualize Ridge Regression Model
 
 ```{r}
 plot(ridge.cv1)
@@ -223,6 +382,7 @@ RMSE
 ```
 
 ### Fit Ridge Regression Model To Raw Data
+
 ```{r}
 set.seed(1)
 ridge.cv2 = cv.glmnet(x, y, type.measure="mse", alpha=0, family="gaussian", nlambda=200, nfolds = 10, standardize = FALSE)
@@ -237,7 +397,8 @@ ridge.cv2$lambda.1se
 round(cbind(coef(ridge.cv2, s='lambda.min'), coef(ridge.cv2, s='lambda.1se')), digits=3)
 ```
 
-### Visualize Model and Retrieve Related Attributes
+### Visualize Ridge Regression Model
+
 ```{r}
 plot(ridge.cv2)
 abline(h=ridge.cv2$cvup[ridge.cv2$index[1]], lty=4)
@@ -257,11 +418,47 @@ predictions_ridge2 <- glmnet(x, y, alpha=0, lambda = ridge.cv2$lambda.min, stand
 RMSE2 = RMSE(predictions_ridge2, y)
 RMSE2
 ```
+
+### Analysis of Ridge Regression Model
+
+#### Standardized Data Frame
+
+When fitting Ridge Regression Model to Standardized Data, the most optimal lambda value that minimizes MSE is 1.955834. Plus, the maximum lambda value which restricts the prediction errors within one standard deviation is 47.67237.
+
+We witness Ridge Regression shift most the of coefficients of the predictors towards zero when $\lambda$=1.955834 is passed through the model. However, these variables display outlying behavior when their coefficients are relatively further than zero: 
+
+"Macro – Trade EMV Tracker" -1.674
+
+"Labor Disputes EMV Tracker" 2.041
+
+"Intellectual Property Matters EMV Tracker" 1.596
+
+"Immigration EMV Tracker" -2.295
+
+"Energy and Environmental Regulation EMV Tracker" 2.739
+
+"Other Regulation EMV Tracker" -1.492
+
+"Agricultural Policy EMV Tracker" -4.904
+
+Therefore, these predictors demonstrate major contribution to the response variable VIX. Additionally, the model yields a RMSE metric of 4.970971.
+
+
+#### Raw Data Frame
+
+When fitting Ridge Regression Model to Standardized Data, the most optimal lambda value that minimizes MSE is 4.585042. Plus, the maximum lambda value which restricts the prediction errors within one standard deviation is 147.5302.
+
+We witness Ridge Regression shift all of the coefficients of the predictors towards zero when $\lambda$=4.585042 is passed through the model. Thus, the model deemed all of the predictive variables insignificant of the response variable VIX. Additionally, the model yields a RMSE metric of 5.029565.
+
+#### Conclusion
+
+When comparing the results from applying Ridge Regression to standardized and raw data separately, it is advisable to standardize the input data before fitting the model. Without pre-processing the data, the model fails to account for any significant relationship between the EMV trackers and VIX, which is inaccurate since we tested for multi-collinearity as above. Plus, model with standardized data generates lower RMSE value. Therefore, it is better to standardize data before fitting to Ridge Regression Model. 
+
 ## Elastic Net Regression
 
-Use trainControl() and train() functions to fit the Elastic Net Regression model to the data. 
+Use trainControl() and train() functions to fit the Elastic Net Regression model to the data.
 
-The goal is to find the optimal $\alpha$ and $\lambda$. 
+The goal is to find the optimal $\alpha$ and $\lambda$.
 
 ```{r}
 k <- 10
