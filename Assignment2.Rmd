@@ -32,6 +32,7 @@ Considering this all-hovering question, in this report, through using Statistica
 ```{r}
 # load the data
 df <- read_excel("/Users/hwey/Downloads/EMV_VIX_Data.xlsx")
+raw_data <- read_excel("/Users/hwey/Downloads/EMV_VIX_Data.xlsx")
 
 # exclude all observations with missing data
 df = na.omit(df)
@@ -56,9 +57,25 @@ The response variable is denoted by y.
 
 The predictive variables is denoted by x. 
 
-Nevertheless, the data frame is scanned initially to remove any empty data entries.
+Upon inspecting the raw data input, it is important to note that several EMV trackers have numerous zero entries. These variables include:
 
-Through inspection of the raw data sample, we can say that <sparsity>.
+- Macro - Trade EMV Tracker.
+
+- Marco - Business Investment and Sentiment EMV Tracker.
+
+- Exchange Rates EMV Tracker. 
+
+- Intellectual Property Policy EMV Tracker. 
+
+- Immigration EMV Tracker. 
+
+- Other Regulation EMV Tracker. 
+
+- Transportation, Infrastructure, and Public Utilities EMV Tracker. 
+
+- Agriculural Policy EMV Tracker. 
+
+In regards to data sparsity, the given data set does not neither empty data entries nor mismatch number of entries for the response variables and the predictors. However, the aforementioned variables, since their entries were filled with zero values, could cause model imbalance. It is essential to concern that many zero entires would shift the weight of the variables, however, since it is only 8 out of 45 variables that contain noticeable number of zero-entries, the remaining 37 variables would balance everything out. Hence, it is safe to proceed to model fitting with this data frame.  
 
 ## OLS Regression
 
@@ -456,9 +473,9 @@ When comparing the results from applying Ridge Regression to standardized and ra
 
 ## Elastic Net Regression
 
-Use trainControl() and train() functions to fit the Elastic Net Regression model to the data.
+In previous sections, Lasso Regression Method was conducted with $\alpha$=1 and Ridge Regression Method was conducted with $\alpha$=0. However, since $\alpha$ can vary in range of 0 and 1, we can continue to build Elastic Net Regression Model and tune to the predictions to see whether we could achieve a better model with different $\alpha$ and $\lambda$ values.
 
-The goal is to find the optimal $\alpha$ and $\lambda$.
+The goal is to find the optimal $\alpha$ and $\lambda$ using Elastic Net Regression Method.
 
 ```{r}
 k <- 10
@@ -511,7 +528,26 @@ Can you characterize the nature of the most dominant forces responsible for driv
 
 Can you provide a coherent picture of mechanisms underlying the sudden volatility changes in stock markets in the past 23 years, by further considering the relatively homogeneous segments of the market?
 
+## Load and Split Data into Appropriate Segments
+
 ```{r}
+# data subset from 1990-01 to 1998-06
+segment1 = (raw_data[raw_data$Date > "1989-12" & raw_data$Date < "1998-07",])
+
+# data subset from 1998-07 to 2003-03
+segment2 = (raw_data[raw_data$Date > "1998-06" & raw_data$Date < "2003-04"])
+
+# data subset from 2003-04 to 2007-12
+segment3 = (raw_data[raw_data$Date > "2003-02" & raw_data$Date < "1998-08",])
+
+# data subset from 2008-01 to 2009-09
+segment4 = (raw_data[raw_data$Date > "2007-12" & raw_data$Date < "2009-10"])
+
+# data subset from 2009-10 to 2019-12
+segment5 = (raw_data[raw_data$Date > "2009-09" & raw_data$Date < "2020-01",])
+
+# data subset from 2020-01 to 2022-12
+segment6 = (raw_data[raw_data$Date > "2019-12" & raw_data$Date < "2023-01"])
 
 ```
 
